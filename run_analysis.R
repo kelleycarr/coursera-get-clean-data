@@ -30,7 +30,7 @@ run_analysis <- function(summary = FALSE, long_form = TRUE) {
   
   # Write the tidy data if option is selected
   if (summary) {
-    write.table(tidy_data_summary, file="tidy_data_summary.txt")
+    write.table(tidy_data_summary, file="tidy_data_summary.txt", row.names = FALSE)
   }
 }
 
