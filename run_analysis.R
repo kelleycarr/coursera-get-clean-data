@@ -1,26 +1,37 @@
 # This assumes that your working directory is the repo. 
 # This file needs to be sourced in order for the analysis to run properly.
 # source("run_analysis.R")
-run_analysis <- function() {
+library(reshape2)
+run_analysis <- function(summary = FALSE, long_form = TRUE) {
   
   if (!file.exists("UCI HAR Dataset")) {
     unzip_data_files()
   }
   data_file_path <- file.path(".","UCI HAR Dataset")
   
-  ## Merge the training and the test sets to create one data set.
-  ## Appropriately label the data set with descriptive variable names.
+  ## Merge the training and the test sets & label the data
   all_data <- merge_sets(data_file_path)
   
-  ## Extract only the measurements on the mean and standard deviation for each measurement.
-  extracted_data <- all_data[ , grepl("subject_data|y_data|mean|std|Mean", colnames(all_data))]
+  ## Extract measurements on the mean and standard deviation for each measurement.
+  extracted_data <- all_data[ , grepl("subject|y_data|mean|std|Mean", colnames(all_data))]
   
-  ## Use descriptive activity names to name the activities in the data set
+  ## Name the activities in the data set
   extracted_data <- assign_activity_names(extracted_data, data_file_path)
 
   ## Create an independent tidy data set with the average of each variable for each 
   ## activity and each subject.
-  tidy_data_summary <- aggregate(. ~ subject_data + activity_label, extracted_data, mean)
+  tidy_data_summary <- aggregate(. ~ subject + activity_label, extracted_data, mean)
+  if (long_form) {
+    tidy_data_summary <- melt(tidy_data_summary, 
+                              id = c("subject","activity_label"), 
+                              measure.vars = setdiff(colnames(tidy_data_summary), c("subject", "activity_label")))
+    colnames(tidy_data_summary) <- c("subject","activity_label","variable","mean")
+  }
+  
+  # Write the tidy data if option is selected
+  if (summary) {
+    write.table(tidy_data_summary, file="tidy_data_summary.txt")
+  }
 }
 
 unzip_data_files <- function() {
@@ -66,7 +77,7 @@ merge_separate_sets <- function(data_file_path, file_type, features) {
                        x_data)
   
   # Set the name of the columns to the "features" list
-  colnames(return_data) <- c("subject_data","activity_code",as.character(features[ , 2]))
+  colnames(return_data) <- c("subject","activity_code",as.character(features[ , 2]))
   
   return(return_data)
 }
